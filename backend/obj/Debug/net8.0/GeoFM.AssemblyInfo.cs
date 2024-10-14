@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GeoFM")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db5c72bcaf09978eee4a834cad95f579e612d2b8")]
 [assembly: System.Reflection.AssemblyProductAttribute("GeoFM")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GeoFM")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

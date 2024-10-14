@@ -30,3 +30,4 @@
 /home/benas/RiderProjects/GeoFM/backend/obj/Debug/net8.0/GeoFM.pdb
 /home/benas/RiderProjects/GeoFM/backend/obj/Debug/net8.0/GeoFM.genruntimeconfig.cache
 /home/benas/RiderProjects/GeoFM/backend/obj/Debug/net8.0/ref/GeoFM.dll
+/home/benas/RiderProjects/GeoFM/backend/bin/Debug/net8.0/RadioBrowser.dll
