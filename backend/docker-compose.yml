@@ -1,0 +1,6 @@
+﻿services:
+  geofm:
+    image: geofm
+    build:
+      context: .
+      dockerfile: Dockerfile
