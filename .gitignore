@@ -1,0 +1,22 @@
+
+# Ignore build directories and files
+backend/bin/
+backend/obj/
+
+# Ignore Rider project files
+backend/.idea/
+
+# Ignore node_modules
+frontend/node_modules/
+
+# Ignore compiled binaries
+*.dll
+*.pdb
+*.exe
+*.log
+
+# Ignore environment files
+.env
+
+# Ignore output from builds
+frontend/dist/
