@@ -1,6 +1,0 @@
-@GeoFM_HostAddress = http://localhost:5085
-
-GET {{GeoFM_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Flurl.Http;
 using RadioBrowser.Models;
 
-namespace GeoFM.Controllers;
+namespace GuessFM.Controllers;
 
 [ApiController]
 [Route("[controller]")]
