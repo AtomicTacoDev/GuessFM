@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import './App.css';
 
 function App() {
-    const [stationUrl, setStationUrl] = useState(null);
     const audioRef = useRef(null);
 
     async function GetRandomStationUrl() {

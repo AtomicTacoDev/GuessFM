@@ -12,7 +12,7 @@ public class RadioBrowserController : ControllerBase
 {
     private const string BaseUrl = "all.api.radio-browser.info";
 
-    private string GetApiUrl()
+    private static string GetApiUrl()
     {
         var ips = Dns.GetHostAddresses(BaseUrl);
         var longestRoundTripTime = long.MaxValue;
@@ -62,31 +62,5 @@ public class RadioBrowserController : ControllerBase
             Console.WriteLine(e);
             return StatusCode(500, "Error fetching radio browser api url.");
         }
-        
-        /*try {
-            const response = await fetch(`http://localhost:5085/Test/getRadioStations`);
-            const apiUrl = await response.text();
-
-            try {
-                const url = new URL(`http://${apiUrl}/json/stations`);
-                // url.searchParams.append('hidebroken', 'true');
-
-                const response = await fetch(url);
-                const radioStations = await response.json();
-                const randomRadio = radioStations[Math.floor(Math.random() * radioStations.length)];
-                console.log(randomRadio);
-                
-                setStationUrl(randomRadio.url_resolved);
-                
-                if (audioRef.current) {
-                    audioRef.current.src = randomRadio.url_resolved;
-                    audioRef.current.play();
-                }
-            } catch (e) {
-                console.error('Error fetching radio stations:', e);
-            }
-        } catch (e) {
-            console.error('Error fetching API url:', e);
-        }*/
     }
 }
