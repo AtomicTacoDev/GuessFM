@@ -7,6 +7,7 @@ backend/obj/
 backend/.idea/
 
 # Ignore node_modules
+backend/node_modules/
 frontend/node_modules/
 
 # Ignore compiled binaries
@@ -20,3 +21,5 @@ frontend/node_modules/
 
 # Ignore output from builds
 frontend/dist/
+
+backend/package-lock.json
