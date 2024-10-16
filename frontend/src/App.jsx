@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, {useRef} from 'react';
 import './App.css';
 
 function App() {
@@ -19,11 +19,7 @@ function App() {
     }
     
     async function playRadioStation() {
-        const radioStationUrl = await GetRandomStationUrl();
-        
-        console.log(radioStationUrl);
-        
-        audioRef.current.src = await radioStationUrl;
+        audioRef.current.src = await GetRandomStationUrl();
         audioRef.current.play();
     }
 

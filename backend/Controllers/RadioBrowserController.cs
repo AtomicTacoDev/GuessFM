@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Flurl.Http;
 using RadioBrowser.Models;
@@ -46,10 +47,15 @@ public class RadioBrowserController : ControllerBase
 
             try
             {
-                var radioStations = await $"http://{apiUrl}/json/stations".GetJsonAsync<List<StationInfo>>();
-                var randomStationData = radioStations.OrderBy(x => Guid.NewGuid()).FirstOrDefault();
+                var radioStationsCount = (await $"https://{apiUrl}/json/stats".GetJsonAsync<JsonElement>()).GetProperty("stations").GetInt32();
+                var randomIndex = new Random().Next(0, radioStationsCount);
+                var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
+                Console.WriteLine(radioStationData.UrlResolved);
+                Console.WriteLine(radioStationData.Name);
+                Console.WriteLine(radioStationData.CountryCode);
+                Console.WriteLine(radioStationData.LastCheckOk);
                 
-                return randomStationData == null ? StatusCode(500, "Could not get random radio station") : Ok(randomStationData.UrlResolved);
+                return Ok(radioStationData.UrlResolved);
             }
             catch (FlurlHttpException ex)
             {
