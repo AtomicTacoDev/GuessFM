@@ -1,6 +1,6 @@
 ﻿services:
   GuessFM:
-    image: GuessFM
+    image: guessfm
     build:
       context: .
       dockerfile: Dockerfile
