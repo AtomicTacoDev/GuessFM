@@ -1,5 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Flurl.Http;
@@ -12,6 +15,7 @@ namespace GuessFM.Controllers;
 public class RadioBrowserController : ControllerBase
 {
     private const string BaseUrl = "all.api.radio-browser.info";
+    private const string HashSecretKey = "verymuchsecretkey";
 
     private static string GetApiUrl()
     {
@@ -39,7 +43,7 @@ public class RadioBrowserController : ControllerBase
     }
 
     [HttpGet("getRandomRadioStationUrl")]
-    public async Task<ActionResult<string>> GetRandomRadioStationUrl()
+    public async Task<ActionResult<List<string>>> GetRandomRadioStationUrl()
     {
         try
         {
@@ -50,12 +54,19 @@ public class RadioBrowserController : ControllerBase
                 var radioStationsCount = (await $"https://{apiUrl}/json/stats".GetJsonAsync<JsonElement>()).GetProperty("stations").GetInt32();
                 var randomIndex = new Random().Next(0, radioStationsCount);
                 var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
+                var regionInfo = new RegionInfo(radioStationData.CountryCode);
                 Console.WriteLine(radioStationData.UrlResolved);
                 Console.WriteLine(radioStationData.Name);
-                Console.WriteLine(radioStationData.CountryCode);
+                Console.WriteLine(regionInfo.EnglishName);
                 Console.WriteLine(radioStationData.LastCheckOk);
-                
-                return Ok(radioStationData.UrlResolved);
+
+                var hmac = new HMACSHA256(Encoding.ASCII.GetBytes(HashSecretKey));
+                var hashedCountry = hmac.ComputeHash(Encoding.ASCII.GetBytes(regionInfo.EnglishName));
+                return Ok(new Dictionary<string, string>
+                {
+                    ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
+                    ["hashedCountry"] = Convert.ToBase64String(hashedCountry),
+                });
             }
             catch (FlurlHttpException ex)
             {
