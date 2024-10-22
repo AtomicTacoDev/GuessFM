@@ -2,9 +2,18 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import AudioMotionAnalyzer from 'audiomotion-analyzer';
 import './App.css';
 
+function CountryNameLetter() {
+    return (
+        <div className="aspect-square size-12 flex justify-center items-center outline outline-black rounded-md">
+            
+        </div>
+    );
+}
+
 function App() {
     const broadcastUrl = useRef(null);
     const hashedCountry = useRef(null);
+    const wordLengths = useRef(null);
     const visualizer = useRef(null);
     const [isGameStarted, setIsGameStarted] = useState(false);
 
@@ -16,13 +25,16 @@ function App() {
         setIsGameStarted(true);
 
         try {
-            const response = await fetch("http://localhost:5085/RadioBrowser/getRandomRadioStationUrl");
+            const response = await fetch("http://localhost:5085/RadioBrowser/getGameData");
 
             if (response.ok) {
                 const data = await response.json();
 
                 hashedCountry.current = data["hashedCountry"];
                 broadcastUrl.current.src = data["broadcastUrl"].replace(/['"\s]+/g, '');
+                wordLengths.current = data["wordLengths"];
+                
+                console.log(wordLengths.current);
 
                 broadcastUrl.current.oncanplay = () => {
                     broadcastUrl.current.play().catch((error) => {
@@ -66,22 +78,18 @@ function App() {
     }, [isGameStarted]);
     
     useEffect(() => {
-        document.addEventListener('keydown', onKeyPress);
+        if (isGameStarted) document.addEventListener('keydown', onKeyPress);
         
         return () => {
             document.removeEventListener('keydown', onKeyPress);
         }
-    }, [isGameStarted, onKeyPress]);
+    }, [isGameStarted]);
 
     return (
         <>
-            <h1>GuessFM</h1>
             <div ref={visualizer} style={{width: '100%', height: '300px'}}/>
-            {!isGameStarted && (
-                <div className="card">
-                    <button onClick={startGame}>Start</button>
-                </div>
-            )}
+            {!isGameStarted && <button onClick={startGame} className="m-3">Start</button>}
+            
             <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}} />
         </>
     );

@@ -42,8 +42,8 @@ public class RadioBrowserController : ControllerBase
         return apiUrl;
     }
 
-    [HttpGet("getRandomRadioStationUrl")]
-    public async Task<ActionResult<List<string>>> GetRandomRadioStationUrl()
+    [HttpGet("getGameData")]
+    public async Task<ActionResult<List<string>>> GetGameData()
     {
         try
         {
@@ -62,10 +62,12 @@ public class RadioBrowserController : ControllerBase
 
                 var hmac = new HMACSHA256(Encoding.ASCII.GetBytes(HashSecretKey));
                 var hashedCountry = hmac.ComputeHash(Encoding.ASCII.GetBytes(regionInfo.EnglishName));
-                return Ok(new Dictionary<string, string>
+
+                return Ok(new Dictionary<string, object>
                 {
                     ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
                     ["hashedCountry"] = Convert.ToBase64String(hashedCountry),
+                    ["wordLengths"] = regionInfo.EnglishName.Split(' ').Select(word => word.Length).ToList()
                 });
             }
             catch (FlurlHttpException ex)
