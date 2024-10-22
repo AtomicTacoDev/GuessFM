@@ -2,9 +2,9 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import AudioMotionAnalyzer from 'audiomotion-analyzer';
 import './App.css';
 
-function CountryNameLetter() {
+function CountryNameLetter({ isLastLetterOfWord }) {
     return (
-        <div className="aspect-square size-12 flex justify-center items-center outline outline-black rounded-md">
+        <div className={`aspect-square size-12 flex justify-center items-center outline outline-2 outline-gray-600 ${isLastLetterOfWord ? `mr-6` : `mr-2`}`}>
             
         </div>
     );
@@ -22,8 +22,6 @@ function App() {
     }, []);
 
     async function startGame() {
-        setIsGameStarted(true);
-
         try {
             const response = await fetch("http://localhost:5085/RadioBrowser/getGameData");
 
@@ -34,12 +32,11 @@ function App() {
                 broadcastUrl.current.src = data["broadcastUrl"].replace(/['"\s]+/g, '');
                 wordLengths.current = data["wordLengths"];
                 
-                console.log(wordLengths.current);
-
                 broadcastUrl.current.oncanplay = () => {
                     broadcastUrl.current.play().catch((error) => {
                         console.error("Error playing audio:", error);
                     });
+                    setIsGameStarted(true);
                 };
             } else {
                 console.error("Error fetching radio station.");
@@ -70,7 +67,6 @@ function App() {
                 }
             });
 
-
             return () => {
                 analyzer.destroy();
             };
@@ -87,9 +83,17 @@ function App() {
 
     return (
         <>
-            <div ref={visualizer} style={{width: '100%', height: '300px'}}/>
+            <div ref={visualizer} style={{width: '100%', height: '500px'}}/>
             {!isGameStarted && <button onClick={startGame} className="m-3">Start</button>}
-            
+            {isGameStarted && (
+                <div className="flex justify-center items-center">
+                    {wordLengths.current.map((length, wordIndex) => (
+                        Array.from({ length }).map((_, letterIndex) => (
+                            <CountryNameLetter key={`${wordIndex}-${letterIndex}`} isLastLetterOfWord={letterIndex === length - 1} />
+                        ))
+                    ))}
+                </div>
+            )}
             <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}} />
         </>
     );
