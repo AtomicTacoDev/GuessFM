@@ -88,18 +88,14 @@ public class RadioBrowserController : ControllerBase
     [HttpPost("guessLetter")]
     public ActionResult<List<int>> GuessLetter([FromBody] GuessLetterRequest request)
     {
-        var whiteSpaceCount = 0;
+        var currentLetterIndex = 0;
         var indexes = new List<int>();
         for (var i = 0; i < request.Answer.Length; i++)
         {
-            if (request.Answer[i] == ' ')
-            {
-                whiteSpaceCount++;
-                continue;
-            }
-            if (request.Answer.ToLower()[i] != request.Letter) continue;
+            if (request.Answer.ToLower()[i] < 'a' || request.Answer.ToLower()[i] > 'z') continue;
             
-            indexes.Add(i - whiteSpaceCount);
+            if (request.Answer.ToLower()[i] == request.Letter) indexes.Add(currentLetterIndex);
+            currentLetterIndex++;
         }
         
         return Ok(indexes);
