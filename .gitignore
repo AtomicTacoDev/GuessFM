@@ -22,5 +22,6 @@ frontend/node_modules/
 # Ignore output from builds
 frontend/dist/
 
+frontend/package-lock.json
 backend/package-lock.json
 backend/publish
