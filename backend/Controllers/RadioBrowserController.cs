@@ -10,12 +10,18 @@ using RadioBrowser.Models;
 
 namespace GuessFM.Controllers;
 
+public class GuessLetterRequest
+{
+    public required char Letter { get; set; }
+    public required string Answer { get; set; }
+}
+
+
 [ApiController]
 [Route("[controller]")]
 public class RadioBrowserController : ControllerBase
 {
     private const string BaseUrl = "all.api.radio-browser.info";
-    private const string HashSecretKey = "verymuchsecretkey";
 
     private static string GetApiUrl()
     {
@@ -55,18 +61,14 @@ public class RadioBrowserController : ControllerBase
                 var randomIndex = new Random().Next(0, radioStationsCount);
                 var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
                 var regionInfo = new RegionInfo(radioStationData.CountryCode);
-                Console.WriteLine(radioStationData.UrlResolved);
                 Console.WriteLine(radioStationData.Name);
                 Console.WriteLine(regionInfo.EnglishName);
-                Console.WriteLine(radioStationData.LastCheckOk);
-
-                var hmac = new HMACSHA256(Encoding.ASCII.GetBytes(HashSecretKey));
-                var hashedCountry = hmac.ComputeHash(Encoding.ASCII.GetBytes(regionInfo.EnglishName));
+                Console.WriteLine("");
 
                 return Ok(new Dictionary<string, object>
                 {
                     ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
-                    ["hashedCountry"] = Convert.ToBase64String(hashedCountry),
+                    ["answer"] = regionInfo.EnglishName,
                     ["wordLengths"] = regionInfo.EnglishName.Split(' ').Select(word => word.Length).ToList()
                 });
             }
@@ -81,5 +83,25 @@ public class RadioBrowserController : ControllerBase
             Console.WriteLine(e);
             return StatusCode(500, "Error fetching radio browser api url.");
         }
+    }
+
+    [HttpPost("guessLetter")]
+    public ActionResult<List<int>> GuessLetter([FromBody] GuessLetterRequest request)
+    {
+        var whiteSpaceCount = 0;
+        var indexes = new List<int>();
+        for (var i = 0; i < request.Answer.Length; i++)
+        {
+            if (request.Answer[i] == ' ')
+            {
+                whiteSpaceCount++;
+                continue;
+            }
+            if (request.Answer.ToLower()[i] != request.Letter) continue;
+            
+            indexes.Add(i - whiteSpaceCount);
+        }
+        
+        return Ok(indexes);
     }
 }
