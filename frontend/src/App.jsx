@@ -1,6 +1,8 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import AudioMotionAnalyzer from 'audiomotion-analyzer';
+import Keyboard from "@/Keyboard.jsx";
 import './App.css';
+import { BACKEND_URL } from "@/constants.js";
 
 function CountryNameLetter({ letter, isLastLetterOfWord }) {
     return (
@@ -16,21 +18,25 @@ function App() {
     const analyzer = useRef(null);
     const answer = useRef(null);
     const wordLengths = useRef([]);
-    const guessedLetters = useRef([]);
     const endMessage = useRef("");
+    const [guessedLetters, setGuessedLetters] = useState([]);
     const [revealedLetters, setRevealedLetters] = useState({});
     const [isGameStarted, setIsGameStarted] = useState(false);
     
     const onKeyPress = useCallback((event) => {
         if (event.keyCode < 65 || event.keyCode > 90) return;
-        if (guessedLetters.current.includes(event.key)) return;
+        if (guessedLetters.includes(event.key)) return;
         
-        guessLetter(event.key).then(_ => guessedLetters.current.push(event.key));
+        console.log()
+        
+        guessLetter(event.key).then(() => {
+            setGuessedLetters(prev => [...prev, event.key]);
+        });
     }, []);
 
     async function guessLetter(letter) {
         try {
-            const response = await fetch(`http://localhost:5085/RadioBrowser/guessLetter`, {
+            const response = await fetch(`${BACKEND_URL}/RadioBrowser/guessLetter`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,7 +74,7 @@ function App() {
     
     async function startGame() {
         try {
-            const response = await fetch("http://localhost:5085/RadioBrowser/getGameData");
+            const response = await fetch(`${BACKEND_URL}/RadioBrowser/getGameData`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -122,8 +128,8 @@ function App() {
             analyzer.current.destroy();
         }
         answer.current = null;
-        guessedLetters.current = [];
         wordLengths.current = [];
+        setGuessedLetters([]);
         setRevealedLetters({});
     }
     
@@ -149,21 +155,23 @@ function App() {
             {!isGameStarted && <div>{endMessage.current}</div>}
             {!isGameStarted && <button onClick={startGame} className="m-3">Start</button>}
             {isGameStarted && (
-                <div className="flex justify-center items-center text-2xl">
-                    {wordLengths.current.map((length, wordIndex) => {
-                        const previousWordsLength = wordLengths.current.slice(0, wordIndex).reduce((accumulator, current) => accumulator + current, 0);
-
-                        return Array.from({ length }).map((_, letterIndex) => (
-                            <CountryNameLetter
-                                key={`${wordIndex}-${letterIndex}`}
-                                letter={revealedLetters[previousWordsLength + letterIndex] === undefined ? '' : revealedLetters[previousWordsLength + letterIndex].toUpperCase()}
-                                isLastLetterOfWord={letterIndex === length - 1}
-                            />
-                        ));
-                    })}
+                <div className="flex flex-col items-center text-2xl">
+                    <div className="flex justify-center items-center">
+                        {wordLengths.current.map((length, wordIndex) => {
+                            const previousWordsLength = wordLengths.current.slice(0, wordIndex).reduce((accumulator, current) => accumulator + current, 0);
+                            return Array.from({length}).map((_, letterIndex) => (
+                                <CountryNameLetter
+                                    key={`${wordIndex}-${letterIndex}`}
+                                    letter={revealedLetters[previousWordsLength + letterIndex] === undefined ? '' : revealedLetters[previousWordsLength + letterIndex].toUpperCase()}
+                                    isLastLetterOfWord={letterIndex === length - 1}
+                                />
+                            ));
+                        })}
+                    </div>
+                    <Keyboard onKeyPress={onKeyPress} guessedLetters={guessedLetters} revealedLetters={Object.values(revealedLetters)}/>
                 </div>
             )}
-            <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}} />
+            <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}}/>
         </>
     );
 }
