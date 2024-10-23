@@ -1,103 +1,116 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 using Flurl.Http;
+using Microsoft.AspNetCore.Mvc;
 using RadioBrowser.Models;
 
-namespace GuessFM.Controllers;
-
-public class GuessLetterRequest
+namespace GuessFM.Controllers
 {
-    public required char Letter { get; set; }
-    public required string Answer { get; set; }
-}
-
-
-[ApiController]
-[Route("[controller]")]
-public class RadioBrowserController : ControllerBase
-{
-    private const string BaseUrl = "all.api.radio-browser.info";
-
-    private static string GetApiUrl()
+    public class GuessLetterRequest
     {
-        var ips = Dns.GetHostAddresses(BaseUrl);
-        var longestRoundTripTime = long.MaxValue;
-        var apiUrl = "de1.api.radio-browser.info";
-        
-        // Get api url with the lowest ping
-        foreach (var ipAddress in ips)
-        {
-            var reply = new Ping().Send(ipAddress);
-            if (reply.RoundtripTime >= longestRoundTripTime) continue;
-
-            longestRoundTripTime = reply.RoundtripTime;
-            apiUrl = ipAddress.ToString();
-        }
-        
-        var hostEntry = Dns.GetHostEntry(apiUrl);
-        if (!string.IsNullOrEmpty(hostEntry.HostName))
-        {
-            apiUrl = hostEntry.HostName;
-        }
-
-        return apiUrl;
+        public required char Letter { get; set; }
+        public required string Answer { get; set; }
     }
 
-    [HttpGet("getGameData")]
-    public async Task<ActionResult<List<string>>> GetGameData()
+    [ApiController]
+    [Route("[controller]")]
+    public class RadioBrowserController : ControllerBase
     {
-        try
-        {
-            var apiUrl = GetApiUrl();
+        private const string BaseUrl = "all.api.radio-browser.info";
 
+        // Method to check if a given URL is reachable
+        private static async Task<bool> IsApiReachable(string url)
+        {
+            using var httpClient = new HttpClient();
             try
             {
-                var radioStationsCount = (await $"https://{apiUrl}/json/stats".GetJsonAsync<JsonElement>()).GetProperty("stations").GetInt32();
-                var randomIndex = new Random().Next(0, radioStationsCount);
-                var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
-                var regionInfo = new RegionInfo(radioStationData.CountryCode);
-                Console.WriteLine(radioStationData.Name);
-                Console.WriteLine(regionInfo.EnglishName);
-                Console.WriteLine("");
-
-                return Ok(new Dictionary<string, object>
-                {
-                    ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
-                    ["answer"] = regionInfo.EnglishName,
-                    ["wordLengths"] = regionInfo.EnglishName.Split(' ').Select(word => word.Length).ToList()
-                });
+                var response = await httpClient.GetAsync(url);
+                return response.IsSuccessStatusCode;
             }
-            catch (FlurlHttpException ex)
+            catch
             {
-                Console.WriteLine(ex);
-                return StatusCode(500, "Error fetching radio stations.");
+                return false;
             }
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return StatusCode(500, "Error fetching radio browser api url.");
-        }
-    }
 
-    [HttpPost("guessLetter")]
-    public ActionResult<List<int>> GuessLetter([FromBody] GuessLetterRequest request)
-    {
-        var currentLetterIndex = 0;
-        var indexes = new List<int>();
-        for (var i = 0; i < request.Answer.Length; i++)
+        // Method to get the best API URL
+        private static async Task<string> GetApiUrlAsync()
         {
-            if (request.Answer.ToLower()[i] < 'a' || request.Answer.ToLower()[i] > 'z') continue;
-            
-            if (request.Answer.ToLower()[i] == request.Letter) indexes.Add(currentLetterIndex);
-            currentLetterIndex++;
+            var ipAddresses = Dns.GetHostAddresses(BaseUrl);
+            var apiUrl = "de1.api.radio-browser.info"; // Default
+
+            foreach (var ipAddress in ipAddresses)
+            {
+                // Using HttpClient instead of Ping
+                var testUrl = $"https://{ipAddress}/json/stats";
+                if (await IsApiReachable(testUrl))
+                {
+                    apiUrl = ipAddress.ToString();
+                    break; // Found a reachable API
+                }
+            }
+
+            // Check if the apiUrl is reachable
+            if (!await IsApiReachable($"https://{apiUrl}/json/stats"))
+            {
+                throw new Exception("None of the API URLs are reachable.");
+            }
+
+            return apiUrl;
         }
-        
-        return Ok(indexes);
+
+        [HttpGet("getGameData")]
+        public async Task<ActionResult<Dictionary<string, object>>> GetGameData()
+        {
+            try
+            {
+                var apiUrl = await GetApiUrlAsync();
+
+                try
+                {
+                    var radioStationsCount = (await $"https://{apiUrl}/json/stats".GetJsonAsync<JsonElement>()).GetProperty("stations").GetInt32();
+                    var randomIndex = new Random().Next(0, radioStationsCount);
+                    var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
+                    var regionInfo = new RegionInfo(radioStationData.CountryCode);
+
+                    return Ok(new Dictionary<string, object>
+                    {
+                        ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
+                        ["answer"] = regionInfo.EnglishName,
+                        ["wordLengths"] = regionInfo.EnglishName.Split(' ').Select(word => word.Length).ToList()
+                    });
+                }
+                catch (FlurlHttpException ex)
+                {
+                    Console.WriteLine(ex);
+                    return StatusCode(500, "Error fetching radio stations.");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, "Error fetching radio browser API URL.");
+            }
+        }
+
+        [HttpPost("guessLetter")]
+        public ActionResult<List<int>> GuessLetter([FromBody] GuessLetterRequest request)
+        {
+            var currentLetterIndex = 0;
+            var indexes = new List<int>();
+            for (var i = 0; i < request.Answer.Length; i++)
+            {
+                if (request.Answer.ToLower()[i] < 'a' || request.Answer.ToLower()[i] > 'z') continue;
+
+                if (request.Answer.ToLower()[i] == request.Letter) indexes.Add(currentLetterIndex);
+                currentLetterIndex++;
+            }
+
+            return Ok(indexes);
+        }
     }
 }
