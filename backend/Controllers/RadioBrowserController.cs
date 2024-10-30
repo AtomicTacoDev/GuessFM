@@ -21,8 +21,7 @@ namespace GuessFM.Controllers
     public class RadioBrowserController : ControllerBase
     {
         private const string BaseUrl = "all.api.radio-browser.info";
-
-        // Method to check if a given URL is reachable
+        
         private static async Task<bool> IsApiReachable(string url)
         {
             using var httpClient = new HttpClient();
@@ -36,25 +35,21 @@ namespace GuessFM.Controllers
                 return false;
             }
         }
-
-        // Method to get the best API URL
+        
         private static async Task<string> GetApiUrlAsync()
         {
-            var ipAddresses = Dns.GetHostAddresses(BaseUrl);
-            var apiUrl = "de1.api.radio-browser.info"; // Default
+            var ipAddresses = await Dns.GetHostAddressesAsync(BaseUrl);
+            var apiUrl = "de1.api.radio-browser.info";
 
             foreach (var ipAddress in ipAddresses)
             {
-                // Using HttpClient instead of Ping
                 var testUrl = $"https://{ipAddress}/json/stats";
-                if (await IsApiReachable(testUrl))
-                {
-                    apiUrl = ipAddress.ToString();
-                    break; // Found a reachable API
-                }
+                if (!await IsApiReachable(testUrl)) continue;
+                
+                apiUrl = ipAddress.ToString();
+                break;
             }
-
-            // Check if the apiUrl is reachable
+            
             if (!await IsApiReachable($"https://{apiUrl}/json/stats"))
             {
                 throw new Exception("None of the API URLs are reachable.");
