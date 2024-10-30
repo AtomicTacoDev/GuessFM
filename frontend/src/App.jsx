@@ -21,13 +21,12 @@ function App() {
     const endMessage = useRef("");
     const [guessedLetters, setGuessedLetters] = useState([]);
     const [revealedLetters, setRevealedLetters] = useState({});
+    const [isStartingGame, setIsStartingGame] = useState(false);
     const [isGameStarted, setIsGameStarted] = useState(false);
     
     const onKeyPress = useCallback((event) => {
         if (event.keyCode < 65 || event.keyCode > 90) return;
         if (guessedLetters.includes(event.key)) return;
-        
-        console.log()
         
         guessLetter(event.key).then(() => {
             setGuessedLetters(prev => [...prev, event.key]);
@@ -73,6 +72,8 @@ function App() {
     }
     
     async function startGame() {
+        setIsStartingGame(true);
+        
         try {
             const response = await fetch(`${BACKEND_URL}/RadioBrowser/getGameData`);
 
@@ -83,7 +84,7 @@ function App() {
                 answer.current = data["answer"];
                 wordLengths.current = data["wordLengths"];
                 
-                broadcastUrl.current.oncanplay = () => {
+                broadcastUrl.current.oncanplay = async () => {
                     analyzer.current = new AudioMotionAnalyzer(visualizerContainer.current, {
                         source: document.getElementById("audio"),
                         mode: 3,
@@ -103,18 +104,14 @@ function App() {
                         }
                     });
 
-                    broadcastUrl.current.play().then(_ => setIsGameStarted(true)).catch((error) => {
-                        console.error("Error playing audio:", error);
-                        setIsGameStarted(false);
+                    broadcastUrl.current.play().then(() => {
+                        setIsGameStarted(true);
+                        setIsStartingGame(false);
                     });
                 };
-            } else {
-                console.error("Error fetching radio station.");
-                setIsGameStarted(false);
             }
         } catch (error) {
             console.error("Error fetching the radio station URL:", error);
-            setIsGameStarted(false);
         }
     }
 
@@ -152,8 +149,9 @@ function App() {
     return (
         <>
             <div ref={visualizerContainer} style={{width: '100%', height: '500px'}}/>
-            {!isGameStarted && <div>{endMessage.current}</div>}
-            {!isGameStarted && <button onClick={startGame} className="m-3">Start</button>}
+            {!isGameStarted && !isStartingGame && <div>{endMessage.current}</div>}
+            {!isGameStarted && isStartingGame && <div>Starting game...</div>}
+            {!isGameStarted && !isStartingGame && <button onClick={startGame} className="m-3">Start</button>}
             {isGameStarted && (
                 <div className="flex flex-col items-center text-2xl">
                     <div className="flex justify-center items-center">
@@ -171,7 +169,7 @@ function App() {
                     <Keyboard onKeyPress={onKeyPress} guessedLetters={guessedLetters} revealedLetters={Object.values(revealedLetters)}/>
                 </div>
             )}
-            <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}}/>
+            <audio id="audio" ref={broadcastUrl} controls crossOrigin="anonymous" style={{display: 'none'}} onError={startGame}/>
         </>
     );
 }
