@@ -1,12 +1,7 @@
-using System.Globalization;
 using System.Net;
-using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Flurl.Http;
 using Microsoft.AspNetCore.Mvc;
-using RadioBrowser.Models;
 
 namespace GuessFM.Controllers
 {
@@ -71,7 +66,7 @@ namespace GuessFM.Controllers
                     var randomCountryData = availableCountries[new Random().Next(0, availableCountries.Count)];
                     var countryName = randomCountryData.GetProperty("name").GetString();
                     var countryCode = randomCountryData.GetProperty("iso_3166_1").GetString();
-                    var radioStationsCount = (randomCountryData.GetProperty("stationcount")).GetInt32();
+                    var radioStationsCount = randomCountryData.GetProperty("stationcount").GetInt32();
                     var randomIndex = new Random().Next(0, radioStationsCount);
                     var radioStationData = (await $"https://{apiUrl}/json/stations/bycountrycodeexact/{countryCode}?limit=1&offset{randomIndex}".GetJsonAsync<JsonElement>()).EnumerateArray().FirstOrDefault();
                     
