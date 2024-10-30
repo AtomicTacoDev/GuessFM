@@ -67,16 +67,19 @@ namespace GuessFM.Controllers
 
                 try
                 {
-                    var radioStationsCount = (await $"https://{apiUrl}/json/stats".GetJsonAsync<JsonElement>()).GetProperty("stations").GetInt32();
+                    var availableCountries = (await $"https://{apiUrl}/json/countries?hidebroken=true".GetJsonAsync<JsonElement>()).EnumerateArray().ToList();
+                    var randomCountryData = availableCountries[new Random().Next(0, availableCountries.Count)];
+                    var countryName = randomCountryData.GetProperty("name").GetString();
+                    var countryCode = randomCountryData.GetProperty("iso_3166_1").GetString();
+                    var radioStationsCount = (randomCountryData.GetProperty("stationcount")).GetInt32();
                     var randomIndex = new Random().Next(0, radioStationsCount);
-                    var radioStationData = (await $"https://{apiUrl}/json/stations/search?limit=1&offset={randomIndex}".GetJsonAsync<List<StationInfo>>()).First();
-                    var regionInfo = new RegionInfo(radioStationData.CountryCode);
-
-                    return Ok(new Dictionary<string, object>
+                    var radioStationData = (await $"https://{apiUrl}/json/stations/bycountrycodeexact/{countryCode}?limit=1&offset{randomIndex}".GetJsonAsync<JsonElement>()).EnumerateArray().FirstOrDefault();
+                    
+                    return Ok(new Dictionary<string, object?>
                     {
-                        ["broadcastUrl"] = radioStationData.UrlResolved.ToString(),
-                        ["answer"] = regionInfo.EnglishName,
-                        ["wordLengths"] = regionInfo.EnglishName.Split(' ').Select(word => word.Length).ToList()
+                        ["broadcastUrl"] = radioStationData.GetProperty("url_resolved").GetString(),
+                        ["answer"] = countryName,
+                        ["wordLengths"] = countryName!.Split(' ').Select(word => word.Length).ToList()
                     });
                 }
                 catch (FlurlHttpException ex)
